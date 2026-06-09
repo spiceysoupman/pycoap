@@ -35,7 +35,7 @@ class static_template(resource.Resource):
 		full_path_str = "/" + "/".join(path_tuple)
 		print(f"The requested resource path is: {full_path_str}")
 
-		self.post_func(self)
+		self.post_func(request.payload.decode())
 
 		return aiocoap.Message(code=aiocoap.CREATED, payload=b"REST POST Success!")
 
@@ -52,10 +52,10 @@ async def main():
 
 	# Define your custom callback function
 	# YOUR FUNCTION ALWAYS HAS TO EXPECT A REFERANCE TO THE INVOKING OBJECT
-	def test_function(invoking_resource):
-		result = subprocess.run(f"bash {invoking_resource.payload.decode()}", shell=True)
+	def test_function(payload):
+		result = subprocess.run(f"bash {payload}", shell=True)
 
-		print(f"Running {invoking_resource.payload.decode()}")
+		print(f"Running {payload}")
 		if result.returncode == 0:
 			print("Success! Proceeding with logic.")
 		else:
