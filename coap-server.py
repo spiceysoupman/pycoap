@@ -112,7 +112,7 @@ async def main():
     logger.info(f"Loaded OSCORE credentials from {cred_path}")
 
     secure_site = OscoreSiteWrapper(site, oscore_credentials)
-    context = await aiocoap.Context.create_server_context(site=secure_site, server_credentials=oscore_credentials, transports=["udp6"])
+    context = await aiocoap.Context.create_server_context(site=secure_site, server_credentials=oscore_credentials, bind=("0.0.0.0", 5683))
 
     logger.info("Server started")
     await asyncio.get_running_loop().create_future()
