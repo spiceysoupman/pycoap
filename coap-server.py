@@ -99,7 +99,7 @@ class VerboseSite(aiocoap.resource.Site):
         
         return await super().render_to_pipe(pipe)
     
-    async def add_resource(self, path, resource):
+    def add_resource(self, path, resource):
         logger.info(f"Created GET resource at /{"/".join(path)} with size of {len(self.get_bytes)} bytes.")
 
         return super().add_resource(path, resource)
