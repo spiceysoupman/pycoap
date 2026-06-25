@@ -66,9 +66,6 @@ class StaticTemplate(aiocoap.resource.Resource):
             raise TypeError("post_function must be an executable function")
         else:
             self.post_func = post_function
-
-    async def render(self, request):
-        return await super().render(request)
     
     async def render_get(self, request):
         logging_payload = request.payload.decode() if request.payload else None
@@ -95,12 +92,12 @@ class StaticTemplate(aiocoap.resource.Resource):
 class VerboseSite(aiocoap.resource.Site):
     async def render_to_pipe(self, pipe):
         request = pipe.request
-        logger.info(f"Server received request for resource at: /{"/".join(request.opt.uri_path)}")
+        logger.info(f"Server received request for resource /{"/".join(request.opt.uri_path)}")
         
         return await super().render_to_pipe(pipe)
     
     def add_resource(self, path, resource):
-        logger.info(f"Created GET resource at /{"/".join(path)} with size of {len(self.get_bytes)} bytes.")
+        logger.info(f"Created GET resource at /{"/".join(path)} with size of {len(resource.get_bytes)} bytes.")
 
         return super().add_resource(path, resource)
 
@@ -117,11 +114,11 @@ async def main():
     secure_site = OscoreSiteWrapper(site, oscore_credentials)
     context = await aiocoap.Context.create_server_context(site=secure_site, server_credentials=oscore_credentials, transports=["udp6"])
 
-    logger.warning("Server started")
+    logger.info("Server started")
     await asyncio.get_running_loop().create_future()
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\nServer terminated by user.")
+        logger.info("\nServer terminated by user.")

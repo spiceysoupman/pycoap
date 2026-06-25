@@ -30,12 +30,8 @@ def load_security_credentials(file_path: str) -> aiocoap.credentials.Credentials
 
 async def send_rest_request(method_verb, payload_str=None):
     target_uri = sys.argv[1]
-    print(target_uri)
 
     oscore_credentials = load_security_credentials(cred_path)
-    print("Loaded OSCORE credentials:")
-    print(oscore_credentials)
-
     context = await aiocoap.Context.create_client_context()
     context.client_credentials = oscore_credentials
 
