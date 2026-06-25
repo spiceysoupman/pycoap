@@ -1,5 +1,4 @@
 security/*
-testlog
 oscore*
-register.sh
-venv
+.venv
+venv*
