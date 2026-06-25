@@ -1,5 +1,6 @@
 import os
 import subprocess
+import logging
 import asyncio
 import aiocoap
 import aiocoap.resource
@@ -8,12 +9,13 @@ from aiocoap.oscore_sitewrapper import OscoreSiteWrapper
 from pathlib import Path
 import cbor2
 import cbor_diag
-import logging
 
+# Environment/globals, functions and classes 
 os.chdir("security")
 cred_path = "server.cred.diag"
+logger = logging.getLogger("server-log")
 
-def example_function(payload):
+def example_post_function(payload):
         return
 
         result = subprocess.run(f"{payload}", shell=True, capture_output=True, text=True)
@@ -41,7 +43,7 @@ def load_security_credentials(file_path: str) -> aiocoap.credentials.Credentials
     cred_store.load_from_dict(parsed_dict)
     return cred_store
 
-def verbosify():
+def set_default_logging_level():
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
@@ -50,7 +52,6 @@ def verbosify():
 
     logging.getLogger("coap-server").setLevel(logging.INFO)
     logging.getLogger("coap-context").setLevel(logging.INFO)
-    logging.getLogger("coap-server").setLevel(logging.INFO)
     logging.getLogger("coap-security").setLevel(logging.INFO)
 
 class StaticTemplate(aiocoap.resource.Resource):
@@ -60,54 +61,63 @@ class StaticTemplate(aiocoap.resource.Resource):
             self.get_bytes = get_data.encode()
         else:
             self.get_bytes = bytes(get_data)
+        
         if not callable(post_function):
             raise TypeError("post_function must be an executable function")
-        self.post_func = post_function
+        else:
+            self.post_func = post_function
 
+    async def render(self, request):
+        return await super().render(request)
+    
     async def render_get(self, request):
-        logging_payload = request.payload.decode() if request.payload else "None"
-        print(f"Server received GET payload: {logging_payload}")
+        logging_payload = request.payload.decode() if request.payload else None
+        if logging_payload is not None:
+            logger.info(f"Server received GET payload: {logging_payload}")
         return aiocoap.Message(payload=self.get_bytes)
 
     async def render_post(self, request):
-        print(f"Server received POST payload: {request.payload.decode()}")
         path_tuple = request.opt.uri_path
         full_path_str = "/" + "/".join(path_tuple)
-        print(f"The requested resource path is: {full_path_str}")
+        logger.info(f"Server received POST payload: {request.payload.decode()}")
+        logger.info(f"The requested resource path is: {full_path_str}")
         self.post_func(request.payload.decode())
-        return aiocoap.Message(code=aiocoap.CREATED, payload=b"REST POST Success!")
+        return aiocoap.Message(code=aiocoap.CREATED, payload=b"POST method called successfully!")
 
     async def render_put(self, request):
-        print(f"Server received PUT payload: {request.payload.decode()}")
-        return aiocoap.Message(code=aiocoap.CHANGED, payload=b"REST PUT method is disabled!")
+        logger.warning(f"Server received PUT payload: {request.payload.decode()}")
+        return aiocoap.Message(code=aiocoap.CHANGED, payload=b"PUT method is disabled!")
 
     async def render_delete(self, request):
-        print("Server received DELETE request")
-        return aiocoap.Message(code=aiocoap.DELETED, payload=b"REST DELETE method is disabled!")
+        logger.warning("Server received DELETE request")
+        return aiocoap.Message(code=aiocoap.DELETED, payload=b"DELETE method is disabled!")
 
 class VerboseSite(aiocoap.resource.Site):
     async def render_to_pipe(self, pipe):
         request = pipe.request
-        print(f"DEBUG: Server received raw path options array: {request.opt.uri_path}")
+        logger.info(f"Server received request for resource at: /{"/".join(request.opt.uri_path)}")
         
         return await super().render_to_pipe(pipe)
+    
+    async def add_resource(self, path, resource):
+        logger.info(f"Created GET resource at /{"/".join(path)} with size of {len(self.get_bytes)} bytes.")
+
+        return super().add_resource(path, resource)
 
 async def main():
-    #site = aiocoap.resource.Site()
-    verbosify()
+    set_default_logging_level()
     site = VerboseSite()
 
-    example_resource = StaticTemplate("Helllo world!", example_function)
+    example_resource = StaticTemplate("Helllo world!", example_post_function)
     site.add_resource(['example'], example_resource)
 
     oscore_credentials = load_security_credentials(cred_path)
-    print("Loaded OSCORE credentials:")
-    print(oscore_credentials)
+    logger.info(f"Loaded OSCORE credentials from {cred_path}")
 
     secure_site = OscoreSiteWrapper(site, oscore_credentials)
     context = await aiocoap.Context.create_server_context(site=secure_site, server_credentials=oscore_credentials, transports=["udp6"])
 
-    print("Server running...")
+    logger.warning("Server started")
     await asyncio.get_running_loop().create_future()
 
 if __name__ == "__main__":
