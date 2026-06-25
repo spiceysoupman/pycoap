@@ -1,24 +1,43 @@
 import sys
+import os
 import asyncio
 import aiocoap
-import aiocoap.numbers.constants as cc
-from aiocoap.oscore import FilesystemSecurityContext
-from aiocoap import Context
+import aiocoap.credentials
+from pathlib import Path
+import cbor2
+import cbor_diag
+
+os.chdir("security")
+cred_path = "./client.cred.diag"
+
+def load_security_credentials(file_path: str) -> aiocoap.credentials.CredentialsMap:
+    """Reads the EDN configuration file, parses it via CBOR,
+    and returns a populated aiocoap CredentialsMap.
+    """
+    config_path = Path(file_path)
+
+    # Compile the Extended Diagnostic Notation (EDN) text into binary CBOR
+    edn_text = config_path.read_text()
+    cbor_payload = cbor_diag.diag2cbor(edn_text)
+
+    # Decode binary CBOR into a native Python dictionary with correct string keys
+    parsed_dict = cbor2.loads(cbor_payload)
+
+    # Populate and return the credentials mapping store
+    cred_store = aiocoap.credentials.CredentialsMap()
+    cred_store.load_from_dict(parsed_dict)
+    return cred_store
 
 async def send_rest_request(method_verb, payload_str=None):
-    cc.TransportTuning.ACK_TIMEOUT = 25.0
-    cc.TransportTuning.MAX_RETRANSMIT = 2
-
     target_uri = sys.argv[1]
+    print(target_uri)
 
-    client_oscore_context = FilesystemSecurityContext("security/client_zone")
-    context = await Context.create_client_context()
-    
-    context.client_credentials[target_uri] = client_oscore_context
-    context.client_credentials["coap://127.0.0.1/*"] = client_oscore_context
-    context.client_credentials["coap://localhost/*"] = client_oscore_context
-    context.client_credentials["oscore://127.0.0.1/*"] = client_oscore_context
-    context.client_credentials["oscore://localhost/*"] = client_oscore_context
+    oscore_credentials = load_security_credentials(cred_path)
+    print("Loaded OSCORE credentials:")
+    print(oscore_credentials)
+
+    context = await aiocoap.Context.create_client_context()
+    context.client_credentials = oscore_credentials
 
     payload_bytes = payload_str.encode() if payload_str else b""
     req = aiocoap.Message(
@@ -26,8 +45,6 @@ async def send_rest_request(method_verb, payload_str=None):
         uri=target_uri,
         payload=payload_bytes
     )
-    
-    req.remote = await context.find_remote_and_set_context(req)
 
     try:
         res = await context.request(req).response
