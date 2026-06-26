@@ -9,6 +9,7 @@ import aiocoap.resource
 import aiocoap.credentials
 from aiocoap.oscore_sitewrapper import OscoreSiteWrapper
 from pathlib import Path
+from urllib.parse import urlparse
 
 # Environment/globals, functions and classes 
 os.chdir("security")
@@ -72,7 +73,7 @@ class StaticTemplate(aiocoap.resource.Resource):
             self.post_func = post_function
 
     async def render(self, request):
-        logger.info(f"Server received {request.code.name} request for resource /{"/".join(request.opt.uri_path)}")
+        logger.info(f"Server received {request.code.name} request for resource /{"/".join(request.get_request_uri())}")
         logged_payload = request.payload.decode()
         if logged_payload is not None and logged_payload is not "":
             logger.info(f"Server received payload: {request.payload.decode()}")
