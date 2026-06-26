@@ -73,9 +73,9 @@ class StaticTemplate(aiocoap.resource.Resource):
             self.post_func = post_function
 
     async def render(self, request):
-        logger.info(f"Server received {request.code.name} request for resource /{"/".join(request.get_request_uri())}")
+        logger.info(f"Server received {request.code.name} request for resource /{"/".join(urlparse(request.get_request_uri())).path}")
         logged_payload = request.payload.decode()
-        if logged_payload is not None and logged_payload is not "":
+        if logged_payload is not None and logged_payload != "":
             logger.info(f"Server received payload: {request.payload.decode()}")
         return await super().render(request)
     
