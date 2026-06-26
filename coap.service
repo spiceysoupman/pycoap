@@ -1,0 +1,15 @@
+# Example serive file for a coaper user with venv for project in repo dir
+[Unit]
+Description=Python CoAP server
+After=network.target
+
+[Service]
+WorkingDirectory=/home/coaper/pycoap
+ExecStart=/home/coaper/pycoap/.venv/bin/python3 /home/coaper/pycoap/coap-server.py
+User=coaper
+Group=coaper
+Restart=on-failure
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

@@ -1,4 +1,6 @@
 #!/bin/bash
+# Needed for building dtls library
+apt update && apt install -y build-essential autoconf automake pkg-config libtool
 uv --version || (echo "UV package manager is missing. Its recommended to" && exit)
 uv venv .venv
 echo "Upgrading and installing packages"
