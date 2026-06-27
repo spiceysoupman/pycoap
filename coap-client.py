@@ -7,8 +7,12 @@ from pathlib import Path
 import cbor2
 import cbor_diag
 from aiocoap.numbers.constants import TransportTuning
+import aiocoap.numbers.constants
 
-# Define custom radio tuning
+aiocoap.numbers.constants.ACK_TIMEOUT = 20.0
+aiocoap.numbers.constants.ACK_RANDOM_FACTOR = 1.0
+aiocoap.numbers.constants.MAX_RETRANSMIT = 2
+
 radio_tuning = TransportTuning()
 radio_tuning.ACK_TIMEOUT=20.0
 radio_tuning.ACK_RANDOM_FACTOR=2
