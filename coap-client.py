@@ -9,11 +9,10 @@ import cbor_diag
 from aiocoap.numbers.constants import TransportTuning
 
 # Define custom radio tuning
-radio_tuning = TransportTuning(
-    ACK_TIMEOUT=20.0,
-    ACK_RANDOM_FACTOR=2,
-    MAX_RETRANSMIT=2
-)
+radio_tuning = TransportTuning()
+radio_tuning.ACK_TIMEOUT=20.0
+radio_tuning.ACK_RANDOM_FACTOR=2
+radio_tuning.MAX_RETRANSMIT=2
 
 os.chdir("security")
 cred_path = "./client.cred.diag"
