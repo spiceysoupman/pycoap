@@ -6,6 +6,14 @@ import aiocoap.credentials
 from pathlib import Path
 import cbor2
 import cbor_diag
+from aiocoap.numbers.constants import TransportTuning
+
+# Define custom radio tuning
+radio_tuning = TransportTuning(
+    ACK_TIMEOUT=20.0,
+    ACK_RANDOM_FACTOR=2,
+    MAX_RETRANSMIT=2
+)
 
 os.chdir("security")
 cred_path = "./client.cred.diag"
@@ -39,7 +47,8 @@ async def send_rest_request(method_verb, payload_str=None):
     req = aiocoap.Message(
         code=method_verb,
         uri=target_uri,
-        payload=payload_bytes
+        payload=payload_bytes,
+        transport_tuning=radio_tuning
     )
 
     try:

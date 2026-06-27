@@ -10,6 +10,14 @@ import aiocoap.credentials
 from aiocoap.oscore_sitewrapper import OscoreSiteWrapper
 from pathlib import Path
 from urllib.parse import urlparse
+from aiocoap.numbers.constants import TransportTuning
+
+# Define custom radio tuning
+radio_tuning = TransportTuning(
+    ACK_TIMEOUT=20.0,
+    ACK_RANDOM_FACTOR=2,
+    MAX_RETRANSMIT=2
+)
 
 # Environment/globals, functions and classes 
 os.chdir("security")
@@ -80,19 +88,19 @@ class StaticTemplate(aiocoap.resource.Resource):
         return await super().render(request)
     
     async def render_get(self, request):
-        return aiocoap.Message(payload=self.get_bytes)
+        return aiocoap.Message(code=aiocoap.GET, payload=self.get_bytes, transport_tuning=radio_tuning)
 
     async def render_post(self, request):
         self.post_func(request)
-        return aiocoap.Message(code=aiocoap.CREATED, payload=b"POST method called successfully!")
+        return aiocoap.Message(code=aiocoap.CREATED, payload=b"POST method called successfully!", transport_tuning=radio_tuning)
 
     async def render_put(self, request):
         logger.warning(f"Server received PUT request while it is disabled")
-        return aiocoap.Message(code=aiocoap.CHANGED, payload=b"PUT method is disabled!")
+        return aiocoap.Message(code=aiocoap.CHANGED, payload=b"PUT method is disabled!", transport_tuning=radio_tuning)
 
     async def render_delete(self, request):
         logger.warning("Server received DELETE request while it is disabled")
-        return aiocoap.Message(code=aiocoap.DELETED, payload=b"DELETE method is disabled!")
+        return aiocoap.Message(code=aiocoap.DELETED, payload=b"DELETE method is disabled!", transport_tuning=radio_tuning)
 
 class VerboseSite(aiocoap.resource.Site):
     def add_resource(self, path, resource):
