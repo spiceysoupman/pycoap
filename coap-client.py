@@ -9,21 +9,18 @@ import cbor_diag
 from aiocoap.numbers.constants import TransportTuning
 
 
-class LoraRadioTuning(TransportTuning):
-    ACK_TIMEOUT = 30.0
-    ACK_RANDOM_FACTOR = 3.0
-    MAX_RETRANSMIT = 0
-    MAX_TRANSMIT_WAIT = 120
-    reliability = False
-
-original_message_init = aiocoap.Message.__init__
-
 class TunedMessage(aiocoap.Message):
     def __init__(self, *args, **kwargs):
         # Automatically insert your tuning object if none is provided
-        original_message_init(self, *args, **kwargs)
-        self.transport_tuning=LoraRadioTuning()
+        aiocoap.Message.__init__(self, *args, **kwargs)
+        print(f"Replacing {vars(self.transport_tuning)}")
+        self.transport_tuning.ACK_TIMEOUT = 30.0
+        self.transport_tuning.ACK_RANDOM_FACTOR = 3.0
+        self.transport_tuning.MAX_RETRANSMIT = 1
+        self.transport_tuning.MAX_TRANSMIT_WAIT = 120
+        self.transport_tuning.reliability = True
 
+# Override default message tuning parameters due to unreliable radio medium
 aiocoap.Message.__init__ = TunedMessage.__init__
 
 
