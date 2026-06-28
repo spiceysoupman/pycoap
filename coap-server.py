@@ -28,7 +28,6 @@ class TunedMessage(aiocoap.Message):
         self.transport_tuning.ACK_TIMEOUT = 30.0
         self.transport_tuning.ACK_RANDOM_FACTOR = 3.0
         self.transport_tuning.MAX_RETRANSMIT = 1
-        self.transport_tuning.MAX_TRANSMIT_WAIT = 120
         self.transport_tuning.reliability = True
 
 # Override default message tuning parameters due to unreliable radio medium
