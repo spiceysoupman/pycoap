@@ -11,16 +11,24 @@ from aiocoap.oscore_sitewrapper import OscoreSiteWrapper
 from pathlib import Path
 from urllib.parse import urlparse
 from aiocoap.numbers.constants import TransportTuning
-import aiocoap.numbers.constants
 
-aiocoap.numbers.constants.ACK_TIMEOUT = 20.0
-aiocoap.numbers.constants.ACK_RANDOM_FACTOR = 1.0
-aiocoap.numbers.constants.MAX_RETRANSMIT = 2
 
-radio_tuning = TransportTuning()
-radio_tuning.ACK_TIMEOUT=20.0
-radio_tuning.ACK_RANDOM_FACTOR=2
-radio_tuning.MAX_RETRANSMIT=2
+class LoraRadioTuning(TransportTuning):
+    ACK_TIMEOUT = 20.0
+    ACK_RANDOM_FACTOR = 3.0
+    REQUEST_TIMEOUT = 30.0
+    MAX_RETRANSMIT = 2
+
+original_message_init = aiocoap.Message.__init__
+
+class TunedMessage(aiocoap.Message):
+    def __init__(self, *args, **kwargs):
+        # Automatically insert your tuning object if none is provided
+        kwargs.setdefault('transport_tuning', LoraRadioTuning())
+        original_message_init(self, *args, **kwargs)
+
+aiocoap.Message.__init__ = TunedMessage.__init__
+
 
 # Environment/globals, functions and classes 
 os.chdir("security")

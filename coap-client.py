@@ -7,16 +7,22 @@ from pathlib import Path
 import cbor2
 import cbor_diag
 from aiocoap.numbers.constants import TransportTuning
-import aiocoap.numbers.constants
 
-aiocoap.numbers.constants.ACK_TIMEOUT = 20.0
-aiocoap.numbers.constants.ACK_RANDOM_FACTOR = 1.0
-aiocoap.numbers.constants.MAX_RETRANSMIT = 2
+class LoraRadioTuning(TransportTuning):
+    ACK_TIMEOUT = 20.0
+    ACK_RANDOM_FACTOR = 3.0
+    REQUEST_TIMEOUT = 30.0
+    MAX_RETRANSMIT = 2
 
-radio_tuning = TransportTuning()
-radio_tuning.ACK_TIMEOUT=20.0
-radio_tuning.ACK_RANDOM_FACTOR=2
-radio_tuning.MAX_RETRANSMIT=2
+original_message_init = aiocoap.Message.__init__
+
+class TunedMessage(aiocoap.Message):
+    def __init__(self, *args, **kwargs):
+        # Automatically insert your tuning object if none is provided
+        kwargs.setdefault('transport_tuning', LoraRadioTuning())
+        original_message_init(self, *args, **kwargs)
+
+aiocoap.Message.__init__ = TunedMessage.__init__
 
 os.chdir("security")
 cred_path = "./client.cred.diag"
@@ -56,6 +62,7 @@ async def send_rest_request(method_verb, payload_str=None):
 
     try:
         res = await context.request(req).response
+        mm.MessageManager().send_message()
         print(f" [{method_verb.name}] Response Code: {res.code} | Payload: {res.payload.decode()}")
     except Exception as e:
         print(f"Error encountered: {e}")
