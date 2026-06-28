@@ -76,14 +76,14 @@ def load_credentials(file_path: str) -> aiocoap.credentials.CredentialsMap:
 
 def set_default_logging_level():
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
-    logging.getLogger("coap-server").setLevel(logging.INFO)
-    logging.getLogger("coap-context").setLevel(logging.INFO)
-    logging.getLogger("coap-security").setLevel(logging.INFO)
+    logging.getLogger("coap-server").setLevel(logging.DEBUG)
+    logging.getLogger("coap-context").setLevel(logging.DEBUG)
+    logging.getLogger("coap-security").setLevel(logging.DEBUG)
 
 class StaticTemplate(aiocoap.resource.Resource):
     def __init__(self, get_data, post_function):
