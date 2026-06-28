@@ -8,11 +8,12 @@ import cbor2
 import cbor_diag
 from aiocoap.numbers.constants import TransportTuning
 
+original_message_init = aiocoap.Message.__init__
 
 class TunedMessage(aiocoap.Message):
     def __init__(self, *args, **kwargs):
         # Automatically insert your tuning object if none is provided
-        aiocoap.Message.__init__(self, *args, **kwargs)
+        original_message_init(self, *args, **kwargs)
         print(f"Replacing {vars(self.transport_tuning)}")
         self.transport_tuning.ACK_TIMEOUT = 30.0
         self.transport_tuning.ACK_RANDOM_FACTOR = 3.0

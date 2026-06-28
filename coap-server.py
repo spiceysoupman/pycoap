@@ -18,10 +18,12 @@ os.chdir("security")
 cred_path = "server.cred.diag"
 logger = logging.getLogger("server-log")
 
+original_message_init = aiocoap.Message.__init__
+
 class TunedMessage(aiocoap.Message):
     def __init__(self, *args, **kwargs):
         # Automatically insert your tuning object if none is provided
-        aiocoap.Message.__init__(self, *args, **kwargs)
+        original_message_init(self, *args, **kwargs)
         logger.debug(f"Replacing {vars(self.transport_tuning)}")
         self.transport_tuning.ACK_TIMEOUT = 30.0
         self.transport_tuning.ACK_RANDOM_FACTOR = 3.0
