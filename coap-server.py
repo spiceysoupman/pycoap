@@ -14,18 +14,19 @@ from aiocoap.numbers.constants import TransportTuning
 
 
 class LoraRadioTuning(TransportTuning):
-    ACK_TIMEOUT = 20.0
+    ACK_TIMEOUT = 30.0
     ACK_RANDOM_FACTOR = 3.0
-    REQUEST_TIMEOUT = 30.0
-    MAX_RETRANSMIT = 2
+    MAX_RETRANSMIT = 0
+    MAX_TRANSMIT_WAIT = 120
+    reliability = False
 
 original_message_init = aiocoap.Message.__init__
 
 class TunedMessage(aiocoap.Message):
     def __init__(self, *args, **kwargs):
         # Automatically insert your tuning object if none is provided
-        kwargs.setdefault('transport_tuning', LoraRadioTuning())
         original_message_init(self, *args, **kwargs)
+        self.transport_tuning=LoraRadioTuning()
 
 aiocoap.Message.__init__ = TunedMessage.__init__
 
@@ -99,19 +100,19 @@ class StaticTemplate(aiocoap.resource.Resource):
         return await super().render(request)
     
     async def render_get(self, request):
-        return aiocoap.Message(code=aiocoap.GET, payload=self.get_bytes, transport_tuning=radio_tuning)
+        return aiocoap.Message(code=aiocoap.GET, payload=self.get_bytes)
 
     async def render_post(self, request):
         self.post_func(request)
-        return aiocoap.Message(code=aiocoap.CREATED, payload=b"POST method called successfully!", transport_tuning=radio_tuning)
+        return aiocoap.Message(code=aiocoap.CREATED, payload=b"POST method called successfully!")
 
     async def render_put(self, request):
         logger.warning(f"Server received PUT request while it is disabled")
-        return aiocoap.Message(code=aiocoap.CHANGED, payload=b"PUT method is disabled!", transport_tuning=radio_tuning)
+        return aiocoap.Message(code=aiocoap.CHANGED, payload=b"PUT method is disabled!")
 
     async def render_delete(self, request):
         logger.warning("Server received DELETE request while it is disabled")
-        return aiocoap.Message(code=aiocoap.DELETED, payload=b"DELETE method is disabled!", transport_tuning=radio_tuning)
+        return aiocoap.Message(code=aiocoap.DELETED, payload=b"DELETE method is disabled!")
 
 class VerboseSite(aiocoap.resource.Site):
     def add_resource(self, path, resource):

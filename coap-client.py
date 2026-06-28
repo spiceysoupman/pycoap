@@ -8,21 +8,24 @@ import cbor2
 import cbor_diag
 from aiocoap.numbers.constants import TransportTuning
 
+
 class LoraRadioTuning(TransportTuning):
-    ACK_TIMEOUT = 20.0
+    ACK_TIMEOUT = 30.0
     ACK_RANDOM_FACTOR = 3.0
-    REQUEST_TIMEOUT = 30.0
-    MAX_RETRANSMIT = 2
+    MAX_RETRANSMIT = 0
+    MAX_TRANSMIT_WAIT = 120
+    reliability = False
 
 original_message_init = aiocoap.Message.__init__
 
 class TunedMessage(aiocoap.Message):
     def __init__(self, *args, **kwargs):
         # Automatically insert your tuning object if none is provided
-        kwargs.setdefault('transport_tuning', LoraRadioTuning())
         original_message_init(self, *args, **kwargs)
+        self.transport_tuning=LoraRadioTuning()
 
 aiocoap.Message.__init__ = TunedMessage.__init__
+
 
 os.chdir("security")
 cred_path = "./client.cred.diag"
@@ -56,13 +59,11 @@ async def send_rest_request(method_verb, payload_str=None):
     req = aiocoap.Message(
         code=method_verb,
         uri=target_uri,
-        payload=payload_bytes,
-        transport_tuning=radio_tuning
+        payload=payload_bytes
     )
 
     try:
         res = await context.request(req).response
-        mm.MessageManager().send_message()
         print(f" [{method_verb.name}] Response Code: {res.code} | Payload: {res.payload.decode()}")
     except Exception as e:
         print(f"Error encountered: {e}")
