@@ -18,26 +18,15 @@ os.chdir("security")
 cred_path = "server.cred.diag"
 logger = logging.getLogger("server-log")
 
-# Radio tuning. Override the message's encode() method and set transmit parametes on object
-original_encode = aiocoap.Message.encode
-def patched_encode(self, *args, **kwargs):
-    self.transport_tuning.ACK_TIMEOUT = 30.0
-    self.transport_tuning.ACK_RANDOM_FACTOR = 3.0
-    self.transport_tuning.MAX_RETRANSMIT = 1
-    self.transport_tuning.reliability = True
-
-    return original_encode(self, *args, **kwargs)
-
-aiocoap.Message.encode = patched_encode
-
 original_message_init = aiocoap.Message.__init__
-
 class TunedMessage(aiocoap.Message):
     def __init__(self, *args, **kwargs):
         # Automatically insert your tuning object if none is provided
         original_message_init(self, *args, **kwargs)
-        logger.debug(f"Replacing {vars(self.transport_tuning)}. Self: {vars(self)}")
-        
+        self.transport_tuning.ACK_TIMEOUT = 30.0
+        self.transport_tuning.ACK_RANDOM_FACTOR = 3.0
+        self.transport_tuning.MAX_RETRANSMIT = 1
+        self.transport_tuning.reliability = True
 
 # Override default message tuning parameters due to unreliable radio medium
 aiocoap.Message.__init__ = TunedMessage.__init__
@@ -106,19 +95,19 @@ class StaticTemplate(aiocoap.resource.Resource):
         return await super().render(request)
     
     async def render_get(self, request):
-        return aiocoap.Message(code=aiocoap.GET, payload=self.get_bytes)
+        return aiocoap.Message(payload=self.get_bytes)
 
     async def render_post(self, request):
         self.post_func(request)
-        return aiocoap.Message(code=aiocoap.CREATED, payload=b"POST method called successfully!")
+        return aiocoap.Message(payload=b"POST method called successfully!")
 
     async def render_put(self, request):
         logger.warning(f"Server received PUT request while it is disabled")
-        return aiocoap.Message(code=aiocoap.CHANGED, payload=b"PUT method is disabled!")
+        return aiocoap.Message(payload=b"PUT method is disabled!")
 
     async def render_delete(self, request):
         logger.warning("Server received DELETE request while it is disabled")
-        return aiocoap.Message(code=aiocoap.DELETED, payload=b"DELETE method is disabled!")
+        return aiocoap.Message(payload=b"DELETE method is disabled!")
 
 class VerboseSite(aiocoap.resource.Site):
     def add_resource(self, path, resource):

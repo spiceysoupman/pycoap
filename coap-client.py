@@ -8,17 +8,18 @@ import cbor2
 import cbor_diag
 from aiocoap.numbers.constants import TransportTuning
 
-# Radio tuning. Override the message's encode() method and set transmit parametes on object
-original_encode = aiocoap.Message.encode
-def patched_encode(self, *args, **kwargs):
-    self.transport_tuning.ACK_TIMEOUT = 30.0
-    self.transport_tuning.ACK_RANDOM_FACTOR = 3.0
-    self.transport_tuning.MAX_RETRANSMIT = 1
-    self.transport_tuning.reliability = True
+original_message_init = aiocoap.Message.__init__
+class TunedMessage(aiocoap.Message):
+    def __init__(self, *args, **kwargs):
+        # Automatically insert your tuning object if none is provided
+        original_message_init(self, *args, **kwargs)
+        self.transport_tuning.ACK_TIMEOUT = 30.0
+        self.transport_tuning.ACK_RANDOM_FACTOR = 3.0
+        self.transport_tuning.MAX_RETRANSMIT = 1
+        self.transport_tuning.reliability = True
 
-    return original_encode(self, *args, **kwargs)
-
-aiocoap.Message.encode = patched_encode
+# Override default message tuning parameters due to unreliable radio medium
+aiocoap.Message.__init__ = TunedMessage.__init__
 
 
 os.chdir("security")
