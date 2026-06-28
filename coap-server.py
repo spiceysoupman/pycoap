@@ -24,11 +24,15 @@ class TunedMessage(aiocoap.Message):
     def __init__(self, *args, **kwargs):
         # Automatically insert your tuning object if none is provided
         original_message_init(self, *args, **kwargs)
-        logger.debug(f"Replacing {vars(self.transport_tuning)}")
-        self.transport_tuning.ACK_TIMEOUT = 30.0
-        self.transport_tuning.ACK_RANDOM_FACTOR = 3.0
-        self.transport_tuning.MAX_RETRANSMIT = 1
-        self.transport_tuning.reliability = True
+        logger.debug(f"Replacing {dir(self.transport_tuning)}")
+        is_outbound_resp = self.code is not None and not self.code.is_request()
+        is_outbound_req  = self.code is not None and self.code.is_request() and getattr(self, 'remote', None) is not None
+        
+        if is_outbound_resp or is_outbound_req:
+            self.transport_tuning.ACK_TIMEOUT = 30.0
+            self.transport_tuning.ACK_RANDOM_FACTOR = 3.0
+            self.transport_tuning.MAX_RETRANSMIT = 1
+            self.transport_tuning.reliability = True
 
 # Override default message tuning parameters due to unreliable radio medium
 aiocoap.Message.__init__ = TunedMessage.__init__
